@@ -43,7 +43,7 @@ export function AdminSidebar() {
               <div className="w-8 h-8 rounded-lg bg-sidebar-primary/10 flex items-center justify-center p-1">
                 <Logo size={24} className="w-full h-full object-contain" />
               </div>
-              <span className="font-semibold text-sidebar-foreground">Vistoria Pro</span>
+              <span className="font-semibold text-sidebar-foreground">Check Imob</span>
             </div>
             <Button
               variant="ghost"

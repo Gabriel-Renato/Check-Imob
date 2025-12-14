@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { apiClient } from '@/services/api';
 import { Inspection, Property } from '@/types';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 const statusConfig: Record<string, { label: string; class: string; icon: typeof Clock }> = {
   pending: { label: 'Pendente', class: 'bg-warning/10 text-warning border-warning/30', icon: Clock },
@@ -15,6 +16,7 @@ const statusConfig: Record<string, { label: string; class: string; icon: typeof 
 };
 
 export default function AdminInspections() {
+  const navigate = useNavigate();
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [properties, setProperties] = useState<Record<string, Property>>({});
   const [loading, setLoading] = useState(true);
@@ -142,7 +144,11 @@ export default function AdminInspections() {
                         </span>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate(`/corretor/inspection/${inspection.id}`)}
+                    >
                       Ver Detalhes
                     </Button>
                   </div>

@@ -1,15 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Users, Plus, Search, Mail, Shield, User } from 'lucide-react';
+import { Users, Plus, Search, Mail, Shield, User, Edit, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { apiClient } from '@/services/api';
 import { User as UserType } from '@/types';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function AdminCorretores() {
   const [corretores, setCorretores] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCorretor, setEditingCorretor] = useState<UserType | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'corretor' as 'admin' | 'corretor',
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadCorretores();
@@ -22,8 +34,89 @@ export default function AdminCorretores() {
       setCorretores(data as UserType[]);
     } catch (error) {
       console.error('Erro ao carregar corretores:', error);
+      toast.error('Erro ao carregar corretores');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenDialog = (corretor?: UserType) => {
+    if (corretor) {
+      setEditingCorretor(corretor);
+      setFormData({
+        name: corretor.name || '',
+        email: corretor.email || '',
+        password: '', // Não mostrar senha existente
+        role: corretor.role || 'corretor',
+      });
+    } else {
+      setEditingCorretor(null);
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'corretor',
+      });
+    }
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setEditingCorretor(null);
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      role: 'corretor',
+    });
+  };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.email) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    if (!editingCorretor && !formData.password) {
+      toast.error('A senha é obrigatória para novos corretores');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      if (editingCorretor) {
+        const updateData: any = {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+        };
+        
+        // Só atualizar senha se fornecida
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
+        
+        await apiClient.updateUser(editingCorretor.id, updateData);
+        toast.success('Corretor atualizado com sucesso');
+      } else {
+        await apiClient.createUser({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: 'corretor',
+        });
+        toast.success('Corretor criado com sucesso');
+      }
+      
+      handleCloseDialog();
+      loadCorretores();
+    } catch (error: any) {
+      console.error('Erro ao salvar corretor:', error);
+      toast.error(error?.error || 'Erro ao salvar corretor');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -40,7 +133,7 @@ export default function AdminCorretores() {
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Corretores</h1>
           <p className="text-muted-foreground mt-1">Gerencie os corretores do sistema</p>
         </div>
-        <Button>
+        <Button onClick={() => handleOpenDialog()}>
           <Plus className="w-4 h-4 mr-2" />
           Novo Corretor
         </Button>
@@ -59,7 +152,10 @@ export default function AdminCorretores() {
 
       {/* Corretores List */}
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+        <div className="text-center py-12 text-muted-foreground">
+          <Loader2 className="w-6 h-6 mx-auto animate-spin mb-2" />
+          Carregando...
+        </div>
       ) : filteredCorretores.length === 0 ? (
         <div className="text-center py-12">
           <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
@@ -92,7 +188,8 @@ export default function AdminCorretores() {
                       <span>{corretor.email}</span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleOpenDialog(corretor)}>
+                    <Edit className="w-4 h-4 mr-2" />
                     Editar
                   </Button>
                 </div>
@@ -101,7 +198,70 @@ export default function AdminCorretores() {
           </div>
         </div>
       )}
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingCorretor ? 'Editar Corretor' : 'Novo Corretor'}</DialogTitle>
+            <DialogDescription>
+              {editingCorretor ? 'Atualize as informações do corretor' : 'Adicione um novo corretor ao sistema'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome Completo *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Nome do corretor"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="email@exemplo.com"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Senha {editingCorretor ? '(deixe em branco para manter a atual)' : '*'}
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder={editingCorretor ? "Nova senha (opcional)" : "Senha"}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseDialog} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                editingCorretor ? 'Atualizar' : 'Criar'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

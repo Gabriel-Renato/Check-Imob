@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { apiClient } from '@/services/api';
 import { Inspection, Property, DashboardStats } from '@/types';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 const statusLabels: Record<string, { label: string; class: string }> = {
   pending: { label: 'Pendente', class: 'bg-warning/10 text-warning' },
@@ -23,6 +24,7 @@ const statusLabels: Record<string, { label: string; class: string }> = {
 };
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalInspections: 0,
     pendingInspections: 0,
@@ -102,12 +104,9 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground mt-1">Visão geral das vistorias e imóveis</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => navigate('/admin/inspections')}>
             <Calendar className="w-4 h-4 mr-2" />
-            Últimos 30 dias
-          </Button>
-          <Button>
-            Nova Vistoria
+            Ver Vistorias
           </Button>
         </div>
       </div>
@@ -144,7 +143,7 @@ export default function AdminDashboard() {
         <div className="card-elevated">
           <div className="flex items-center justify-between p-5 border-b border-border">
             <h2 className="font-semibold text-foreground">Vistorias Recentes</h2>
-            <Button variant="ghost" size="sm" className="text-accent">
+            <Button variant="ghost" size="sm" className="text-accent" onClick={() => navigate('/admin/inspections')}>
               Ver todas
               <ArrowUpRight className="w-4 h-4 ml-1" />
             </Button>
@@ -188,7 +187,7 @@ export default function AdminDashboard() {
         <div className="card-elevated">
           <div className="flex items-center justify-between p-5 border-b border-border">
             <h2 className="font-semibold text-foreground">Imóveis</h2>
-            <Button variant="ghost" size="sm" className="text-accent">
+            <Button variant="ghost" size="sm" className="text-accent" onClick={() => navigate('/admin/properties')}>
               Ver todos
               <ArrowUpRight className="w-4 h-4 ml-1" />
             </Button>

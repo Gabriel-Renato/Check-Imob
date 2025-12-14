@@ -9,7 +9,7 @@ export function Logo({ className, size = 32 }: LogoProps) {
   return (
     <img 
       src="/logocheck-removebg-preview.png" 
-      alt="Vistoria Pro Logo" 
+      alt="Check Imob Logo" 
       className={cn("object-contain", className)}
       style={{ width: size, height: size }}
     />

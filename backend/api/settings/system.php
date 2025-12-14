@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         
         // Valores padrão
         $defaults = [
-            'system_name' => 'Vistoria Pro',
+            'system_name' => 'Check Imob',
             'system_version' => '1.0.0'
         ];
         

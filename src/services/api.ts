@@ -18,7 +18,10 @@ class ApiClient {
     this.baseUrl = baseUrl;
     // Recuperar token do localStorage se existir
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token') || null;
+      const savedToken = localStorage.getItem('auth_token');
+      if (savedToken) {
+        this.token = savedToken;
+      }
     }
   }
 
@@ -31,6 +34,17 @@ class ApiClient {
     }
   }
 
+  getToken(): string | null {
+    // Sempre verifica o localStorage para garantir sincronização
+    if (typeof window !== 'undefined') {
+      const savedToken = localStorage.getItem('auth_token');
+      if (savedToken && savedToken !== this.token) {
+        this.token = savedToken;
+      }
+    }
+    return this.token;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -41,8 +55,10 @@ class ApiClient {
       ...options.headers,
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // Sempre busca o token mais atual
+    const currentToken = this.getToken();
+    if (currentToken) {
+      headers['Authorization'] = `Bearer ${currentToken}`;
     }
 
     try {
@@ -97,6 +113,20 @@ class ApiClient {
     return this.request(`/api/users/index.php${query}`);
   }
 
+  async createUser(user: any) {
+    return this.request('/api/users/create.php', {
+      method: 'POST',
+      body: JSON.stringify(user),
+    });
+  }
+
+  async updateUser(id: string, user: any) {
+    return this.request('/api/users/update.php', {
+      method: 'POST',
+      body: JSON.stringify({ id, ...user }),
+    });
+  }
+
   // Properties
   async getProperties() {
     return this.request('/api/properties/index.php');
@@ -110,6 +140,20 @@ class ApiClient {
     return this.request('/api/properties/index.php', {
       method: 'POST',
       body: JSON.stringify(property),
+    });
+  }
+
+  async updateProperty(id: string, property: any) {
+    return this.request('/api/properties/update.php', {
+      method: 'POST',
+      body: JSON.stringify({ id, ...property }),
+    });
+  }
+
+  async deleteProperty(id: string) {
+    return this.request('/api/properties/delete.php', {
+      method: 'POST',
+      body: JSON.stringify({ id }),
     });
   }
 
@@ -146,8 +190,10 @@ class ApiClient {
     const url = `${this.baseUrl}/api/inspections/upload-photo.php`;
     const headers: HeadersInit = {};
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // Sempre busca o token mais atual
+    const currentToken = this.getToken();
+    if (currentToken) {
+      headers['Authorization'] = `Bearer ${currentToken}`;
     }
 
     const response = await fetch(url, {

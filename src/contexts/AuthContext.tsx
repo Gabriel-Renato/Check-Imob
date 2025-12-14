@@ -20,6 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Verificar token salvo ao carregar
     const token = localStorage.getItem('auth_token');
     if (token) {
+      // Garantir que o apiClient tem o token
+      apiClient.setToken(token);
       verifyToken(token);
     } else {
       setLoading(false);
@@ -31,14 +33,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiClient.verifyToken(token);
       if (response.success && response.user) {
         setUser(response.user as User);
+        // Garantir que o token está no apiClient
+        apiClient.setToken(token);
       } else {
         localStorage.removeItem('auth_token');
         apiClient.setToken(null);
+        setUser(null);
       }
     } catch (error) {
       console.error('Erro ao verificar token:', error);
       localStorage.removeItem('auth_token');
       apiClient.setToken(null);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -47,7 +53,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await apiClient.login(email, password);
-      if (response.success && response.user) {
+      if (response.success && response.user && response.token) {
+        // Garantir que o token está salvo
+        apiClient.setToken(response.token);
         setUser(response.user as User);
         return true;
       }

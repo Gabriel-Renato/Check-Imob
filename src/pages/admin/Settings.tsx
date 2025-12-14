@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export default function AdminSettings() {
-  const [systemName, setSystemName] = useState('Vistoria Pro');
+  const [systemName, setSystemName] = useState('Check Imob');
   const [systemVersion] = useState('1.0.0');
   const [dbStatus, setDbStatus] = useState<'Conectado' | 'Erro' | 'Testando'>('Conectado');
   const [passwordMinLength, setPasswordMinLength] = useState(8);
@@ -44,7 +44,7 @@ export default function AdminSettings() {
       ]);
 
       if (system && typeof system === 'object') {
-        setSystemName(system.system_name || 'Vistoria Pro');
+        setSystemName(system.system_name || 'Check Imob');
       }
       if (passwordPolicy && typeof passwordPolicy === 'object') {
         setPasswordMinLength(passwordPolicy.min_length || 8);
@@ -394,6 +394,9 @@ export default function AdminSettings() {
                 <p className="font-medium">Logs de Acesso</p>
                 <p className="text-sm text-muted-foreground">Ativado</p>
               </div>
+              <Button variant="outline" size="sm" onClick={() => setDialogOpen({ ...dialogOpen, logs: true })}>
+                Ver Logs
+              </Button>
               <LogsDialog open={dialogOpen.logs} onOpenChange={(open) => setDialogOpen({ ...dialogOpen, logs: open })} />
             </div>
           </CardContent>
@@ -429,9 +432,6 @@ function LogsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">Ver Logs</Button>
-      </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Logs de Acesso</DialogTitle>

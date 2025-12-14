@@ -34,17 +34,20 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Carregando...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Verificando autenticação...</p>
+        </div>
       </div>
     );
   }
   
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/" replace />;
   }
   
-  if (user && !allowedRoles.includes(user.role)) {
+  if (!allowedRoles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }
   
@@ -56,8 +59,11 @@ function AppRoutes() {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Carregando...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
       </div>
     );
   }
@@ -67,8 +73,8 @@ function AppRoutes() {
       <Route 
         path="/" 
         element={
-          isAuthenticated 
-            ? <Navigate to={user?.role === 'admin' ? '/admin' : '/corretor'} replace /> 
+          isAuthenticated && user
+            ? <Navigate to={user.role === 'admin' ? '/admin' : '/corretor'} replace /> 
             : <Login />
         } 
       />
