@@ -18,12 +18,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     i.id, 
                     i.property_id as propertyId, 
                     i.corretor_id as corretorId,
+                    u.name as corretorName,
+                    u.email as corretorEmail,
                     i.scheduled_date as scheduledDate,
                     i.scheduled_time as scheduledTime,
                     i.status,
                     i.completed_at as completedAt,
                     i.created_at as createdAt
-                FROM inspections i";
+                FROM inspections i
+                LEFT JOIN users u ON i.corretor_id = u.id";
         
         $params = [];
         if ($corretorId) {
