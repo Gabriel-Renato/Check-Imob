@@ -4,10 +4,10 @@
  */
 
 // Configurações do banco de dados
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'property_insight');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_HOST', 'sql102.infinityfree.com');
+define('DB_NAME', 'if0_40682654_checkimobi');
+define('DB_USER', 'if0_40682654');
+define('DB_PASS', 'Ul1yunyufetkj');
 define('DB_CHARSET', 'utf8mb4');
 
 /**
