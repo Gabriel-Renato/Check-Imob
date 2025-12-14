@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Settings as SettingsIcon, Database, User, Shield, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Database, User, Shield, Loader2, CheckCircle2, XCircle, Edit, Save, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -7,10 +7,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiClient } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export default function AdminSettings() {
+  const { user, updateUser } = useAuth();
   const [systemName, setSystemName] = useState('Check Imob');
   const [systemVersion] = useState('1.0.0');
   const [dbStatus, setDbStatus] = useState<'Conectado' | 'Erro' | 'Testando'>('Conectado');
@@ -18,16 +20,25 @@ export default function AdminSettings() {
   const [sessionDuration, setSessionDuration] = useState(24);
   const [loading, setLoading] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState<{
     systemName: boolean;
     passwordPolicy: boolean;
     session: boolean;
     logs: boolean;
+    profile: boolean;
   }>({
     systemName: false,
     passwordPolicy: false,
     session: false,
     logs: false,
+    profile: false,
+  });
+  const [profileFormData, setProfileFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
   useEffect(() => {
@@ -137,6 +148,57 @@ export default function AdminSettings() {
     }
   };
 
+  const handleSaveProfile = async () => {
+    if (!profileFormData.name || !profileFormData.email) {
+      toast.error('Nome e e-mail são obrigatórios');
+      return;
+    }
+
+    if (profileFormData.newPassword && profileFormData.newPassword !== profileFormData.confirmPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+
+    if (profileFormData.newPassword && profileFormData.newPassword.length < 8) {
+      toast.error('A senha deve ter no mínimo 8 caracteres');
+      return;
+    }
+
+    try {
+      setProfileSaving(true);
+      
+      const updateData: any = {
+        name: profileFormData.name,
+        email: profileFormData.email,
+      };
+      
+      // Só atualizar senha se fornecida
+      if (profileFormData.newPassword) {
+        updateData.password = profileFormData.newPassword;
+      }
+      
+      const updatedUser = await apiClient.updateUser(user!.id, updateData);
+      toast.success('Perfil atualizado com sucesso');
+      
+      // Atualizar usuário no contexto
+      if (updatedUser) {
+        updateUser(updatedUser as Partial<any>);
+      }
+      
+      setDialogOpen({ ...dialogOpen, profile: false });
+      setProfileFormData({
+        ...profileFormData,
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error: any) {
+      console.error('Erro ao atualizar perfil:', error);
+      toast.error(error?.error || 'Erro ao atualizar perfil');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -146,6 +208,131 @@ export default function AdminSettings() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Perfil do Admin */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <UserCircle className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Meu Perfil</CardTitle>
+                <CardDescription>Gerencie suas informações pessoais</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Nome</p>
+                <p className="text-sm text-muted-foreground">{user?.name}</p>
+              </div>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">E-mail</p>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </div>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Função</p>
+                <p className="text-sm text-muted-foreground">Administrador</p>
+              </div>
+            </div>
+            <Separator />
+            <Dialog open={dialogOpen.profile} onOpenChange={(open) => setDialogOpen({ ...dialogOpen, profile: open })}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar Perfil e Senha
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Editar Perfil</DialogTitle>
+                  <DialogDescription>
+                    Atualize suas informações pessoais e senha
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-name">Nome Completo *</Label>
+                    <Input
+                      id="profile-name"
+                      value={profileFormData.name}
+                      onChange={(e) => setProfileFormData({ ...profileFormData, name: e.target.value })}
+                      placeholder="Seu nome completo"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-email">E-mail *</Label>
+                    <Input
+                      id="profile-email"
+                      type="email"
+                      value={profileFormData.email}
+                      onChange={(e) => setProfileFormData({ ...profileFormData, email: e.target.value })}
+                      placeholder="seu@email.com"
+                    />
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <p className="text-sm font-medium mb-4">Alterar Senha (opcional)</p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Deixe em branco para manter a senha atual
+                    </p>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="profile-new-password">Nova Senha</Label>
+                        <Input
+                          id="profile-new-password"
+                          type="password"
+                          value={profileFormData.newPassword}
+                          onChange={(e) => setProfileFormData({ ...profileFormData, newPassword: e.target.value })}
+                          placeholder="Mínimo 8 caracteres"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="profile-confirm-password">Confirmar Nova Senha</Label>
+                        <Input
+                          id="profile-confirm-password"
+                          type="password"
+                          value={profileFormData.confirmPassword}
+                          onChange={(e) => setProfileFormData({ ...profileFormData, confirmPassword: e.target.value })}
+                          placeholder="Digite novamente"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDialogOpen({ ...dialogOpen, profile: false })} disabled={profileSaving}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleSaveProfile} disabled={profileSaving}>
+                    {profileSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Salvar
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
+
         {/* Sistema */}
         <Card>
           <CardHeader>
