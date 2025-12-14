@@ -173,6 +173,55 @@ class ApiClient {
   async getDashboardStats() {
     return this.request('/api/dashboard/stats.php');
   }
+
+  // Settings
+  async getSystemSettings() {
+    return this.request('/api/settings/system.php');
+  }
+
+  async updateSystemSetting(key: string, value: string) {
+    return this.request('/api/settings/system.php', {
+      method: 'POST',
+      body: JSON.stringify({ key, value }),
+    });
+  }
+
+  async testDatabase() {
+    return this.request('/api/settings/database-test.php');
+  }
+
+  async createBackup() {
+    return this.request('/api/settings/backup.php', {
+      method: 'POST',
+    });
+  }
+
+  async getPasswordPolicy() {
+    return this.request('/api/settings/password-policy.php');
+  }
+
+  async updatePasswordPolicy(minLength: number) {
+    return this.request('/api/settings/password-policy.php', {
+      method: 'POST',
+      body: JSON.stringify({ min_length: minLength }),
+    });
+  }
+
+  async getSessionSettings() {
+    return this.request('/api/settings/session.php');
+  }
+
+  async updateSessionSettings(durationHours: number) {
+    return this.request('/api/settings/session.php', {
+      method: 'POST',
+      body: JSON.stringify({ duration_hours: durationHours }),
+    });
+  }
+
+  async getAccessLogs(limit?: number) {
+    const query = limit ? `?limit=${limit}` : '';
+    return this.request(`/api/settings/logs.php${query}`);
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
