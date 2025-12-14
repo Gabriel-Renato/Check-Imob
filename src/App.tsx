@@ -15,6 +15,10 @@ import NotFound from "./pages/NotFound";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
+import AdminProperties from "./pages/admin/Properties";
+import AdminCorretores from "./pages/admin/Corretores";
+import AdminInspections from "./pages/admin/Inspections";
+import AdminSettings from "./pages/admin/Settings";
 
 // Corretor Pages
 import CorretorHome from "./pages/corretor/Home";
@@ -79,10 +83,10 @@ function AppRoutes() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route path="properties" element={<AdminDashboard />} />
-        <Route path="corretores" element={<AdminDashboard />} />
-        <Route path="inspections" element={<AdminDashboard />} />
-        <Route path="settings" element={<AdminDashboard />} />
+        <Route path="properties" element={<AdminProperties />} />
+        <Route path="corretores" element={<AdminCorretores />} />
+        <Route path="inspections" element={<AdminInspections />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       {/* Corretor Routes */}

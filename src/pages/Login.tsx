@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { Logo } from '@/components/Logo';
 
 type LoginMode = 'admin' | 'corretor';
 
@@ -57,8 +58,8 @@ export default function Login() {
         
         <div className="relative z-10 flex flex-col justify-center p-12 lg:p-16">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center">
-              <Building2 className="w-7 h-7 text-accent-foreground" />
+            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center p-2">
+              <Logo size={40} className="w-full h-full object-contain" />
             </div>
             <h1 className="text-3xl font-bold text-primary-foreground">Vistoria Pro</h1>
           </div>
@@ -94,8 +95,8 @@ export default function Login() {
         <div className="w-full max-w-md animate-fade-in">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center p-1.5">
+              <Logo size={32} className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Vistoria Pro</h1>
           </div>

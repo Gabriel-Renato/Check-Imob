@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
+import { Logo } from '@/components/Logo';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
@@ -36,22 +37,40 @@ export function AdminSidebar() {
     >
       {/* Header */}
       <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
-        {!collapsed && (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-sidebar-primary-foreground" />
+        {!collapsed ? (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-sidebar-primary/10 flex items-center justify-center p-1">
+                <Logo size={24} className="w-full h-full object-contain" />
+              </div>
+              <span className="font-semibold text-sidebar-foreground">Vistoria Pro</span>
             </div>
-            <span className="font-semibold text-sidebar-foreground">Vistoria Pro</span>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setCollapsed(!collapsed)}
+              className="text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          </>
+        ) : (
+          <div className="w-full flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-sidebar-primary/10 flex items-center justify-center p-1">
+              <Logo size={24} className="w-full h-full object-contain" />
+            </div>
           </div>
         )}
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="text-sidebar-foreground hover:bg-sidebar-accent"
-        >
-          {collapsed ? <Menu className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </Button>
+        {collapsed && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setCollapsed(!collapsed)}
+            className="absolute top-2 right-2 text-sidebar-foreground hover:bg-sidebar-accent"
+          >
+            <Menu className="w-4 h-4" />
+          </Button>
+        )}
       </div>
 
       {/* Navigation */}
