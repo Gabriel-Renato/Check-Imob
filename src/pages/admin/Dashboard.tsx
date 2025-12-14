@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { 
   ClipboardList, 
   Building2, 
@@ -9,43 +10,9 @@ import {
   Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { mockDashboardStats, mockInspections, mockProperties, getPropertyById } from '@/data/mockData';
+import { apiClient } from '@/services/api';
+import { Inspection, Property, DashboardStats } from '@/types';
 import { cn } from '@/lib/utils';
-
-const stats = [
-  {
-    label: 'Total de Vistorias',
-    value: mockDashboardStats.totalInspections,
-    icon: ClipboardList,
-    trend: '+12%',
-    trendUp: true,
-    color: 'bg-accent/10 text-accent',
-  },
-  {
-    label: 'Vistorias Pendentes',
-    value: mockDashboardStats.pendingInspections,
-    icon: Clock,
-    trend: '-5%',
-    trendUp: false,
-    color: 'bg-warning/10 text-warning',
-  },
-  {
-    label: 'Concluídas',
-    value: mockDashboardStats.completedInspections,
-    icon: CheckCircle2,
-    trend: '+8%',
-    trendUp: true,
-    color: 'bg-success/10 text-success',
-  },
-  {
-    label: 'Imóveis Cadastrados',
-    value: mockDashboardStats.propertiesCount,
-    icon: Building2,
-    trend: '+3',
-    trendUp: true,
-    color: 'bg-primary/10 text-primary',
-  },
-];
 
 const statusLabels: Record<string, { label: string; class: string }> = {
   pending: { label: 'Pendente', class: 'bg-warning/10 text-warning' },
@@ -56,6 +23,76 @@ const statusLabels: Record<string, { label: string; class: string }> = {
 };
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalInspections: 0,
+    pendingInspections: 0,
+    completedInspections: 0,
+    propertiesCount: 0,
+    corretoresCount: 0,
+  });
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [statsData, inspectionsData, propertiesData] = await Promise.all([
+        apiClient.getDashboardStats(),
+        apiClient.getInspections(),
+        apiClient.getProperties()
+      ]);
+
+      setStats(statsData as DashboardStats);
+      setInspections((inspectionsData as Inspection[]).slice(0, 4));
+      setProperties((propertiesData as Property[]).slice(0, 4));
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPropertyById = (id: string) => properties.find(p => p.id === id);
+
+  const statsConfig = [
+    {
+      label: 'Total de Vistorias',
+      value: stats.totalInspections,
+      icon: ClipboardList,
+      trend: '+12%',
+      trendUp: true,
+      color: 'bg-accent/10 text-accent',
+    },
+    {
+      label: 'Vistorias Pendentes',
+      value: stats.pendingInspections,
+      icon: Clock,
+      trend: '-5%',
+      trendUp: false,
+      color: 'bg-warning/10 text-warning',
+    },
+    {
+      label: 'Concluídas',
+      value: stats.completedInspections,
+      icon: CheckCircle2,
+      trend: '+8%',
+      trendUp: true,
+      color: 'bg-success/10 text-success',
+    },
+    {
+      label: 'Imóveis Cadastrados',
+      value: stats.propertiesCount,
+      icon: Building2,
+      trend: '+3',
+      trendUp: true,
+      color: 'bg-primary/10 text-primary',
+    },
+  ];
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -77,7 +114,7 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
+        {statsConfig.map((stat, index) => (
           <div
             key={stat.label}
             className="card-elevated p-5 hover:shadow-md transition-all duration-200"
@@ -113,31 +150,37 @@ export default function AdminDashboard() {
             </Button>
           </div>
           <div className="divide-y divide-border">
-            {mockInspections.slice(0, 4).map((inspection) => {
-              const property = getPropertyById(inspection.propertyId);
-              const status = statusLabels[inspection.status];
-              return (
-                <div key={inspection.id} className="p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">
-                        {property?.building || property?.address}
-                      </p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {property?.unit} • {property?.neighborhood}
-                      </p>
+            {loading ? (
+              <div className="p-4 text-center text-muted-foreground">Carregando...</div>
+            ) : inspections.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground">Nenhuma vistoria encontrada</div>
+            ) : (
+              inspections.map((inspection) => {
+                const property = getPropertyById(inspection.propertyId);
+                const status = statusLabels[inspection.status] || statusLabels.pending;
+                return (
+                  <div key={inspection.id} className="p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground truncate">
+                          {property?.building || property?.address}
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {property?.unit} • {property?.neighborhood}
+                        </p>
+                      </div>
+                      <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap", status.class)}>
+                        {status.label}
+                      </span>
                     </div>
-                    <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap", status.class)}>
-                      {status.label}
-                    </span>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <span>{inspection.scheduledDate}</span>
+                      <span>{inspection.scheduledTime}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                    <span>{inspection.scheduledDate}</span>
-                    <span>{inspection.scheduledTime}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -151,23 +194,29 @@ export default function AdminDashboard() {
             </Button>
           </div>
           <div className="divide-y divide-border">
-            {mockProperties.slice(0, 4).map((property) => (
-              <div key={property.id} className="p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Building2 className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">
-                      {property.building || property.address}
-                    </p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {property.unit} • {property.neighborhood}, {property.city}
-                    </p>
+            {loading ? (
+              <div className="p-4 text-center text-muted-foreground">Carregando...</div>
+            ) : properties.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground">Nenhum imóvel encontrado</div>
+            ) : (
+              properties.map((property) => (
+                <div key={property.id} className="p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Building2 className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">
+                        {property.building || property.address}
+                      </p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {property.unit} • {property.neighborhood}, {property.city}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

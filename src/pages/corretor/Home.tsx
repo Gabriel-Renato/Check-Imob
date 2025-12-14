@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ClipboardList, 
@@ -9,7 +10,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { getInspectionsByCorretor, getPropertyById } from '@/data/mockData';
+import { apiClient } from '@/services/api';
+import { Inspection, Property } from '@/types';
 import { cn } from '@/lib/utils';
 
 const statusConfig: Record<string, { label: string; class: string; icon: typeof Clock }> = {
@@ -21,7 +23,40 @@ const statusConfig: Record<string, { label: string; class: string; icon: typeof 
 export default function CorretorHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const inspections = user ? getInspectionsByCorretor(user.id) : [];
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [properties, setProperties] = useState<Record<string, Property>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadData();
+    }
+  }, [user]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [inspectionsData, propertiesData] = await Promise.all([
+        apiClient.getInspections(user?.id),
+        apiClient.getProperties()
+      ]);
+
+      setInspections(inspectionsData as Inspection[]);
+      
+      // Criar mapa de propriedades por ID
+      const propsMap: Record<string, Property> = {};
+      (propertiesData as Property[]).forEach(prop => {
+        propsMap[prop.id] = prop;
+      });
+      setProperties(propsMap);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPropertyById = (id: string) => properties[id];
 
   const pendingCount = inspections.filter(i => i.status === 'pending').length;
   const inProgressCount = inspections.filter(i => i.status === 'in_progress').length;
@@ -92,8 +127,16 @@ export default function CorretorHome() {
         {/* Inspections list */}
         <div className="mb-6">
           <h2 className="font-semibold text-foreground mb-4">Suas Vistorias</h2>
-          <div className="space-y-3">
-            {inspections.map((inspection, index) => {
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+          ) : (
+            <div className="space-y-3">
+              {inspections.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhuma vistoria encontrada
+                </div>
+              ) : (
+                inspections.map((inspection, index) => {
               const property = getPropertyById(inspection.propertyId);
               const status = statusConfig[inspection.status];
               const StatusIcon = status.icon;
@@ -140,8 +183,9 @@ export default function CorretorHome() {
                   </div>
                 </button>
               );
-            })}
-          </div>
+            }))}
+            </div>
+          )}
         </div>
       </main>
     </div>

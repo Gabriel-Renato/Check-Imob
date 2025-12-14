@@ -1,0 +1,42 @@
+# Configuração para servir o frontend React (build)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Se o arquivo ou diretório existe, serva diretamente
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # Redirecionar requisições do backend para a pasta backend
+    RewriteCond %{REQUEST_URI} ^/backend
+    RewriteRule ^ - [L]
+    
+    # Para todas as outras requisições, servir index.html (SPA)
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Configurações de cache
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/x-javascript "access plus 1 month"
+</IfModule>
+
+# Compressão
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Segurança
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+

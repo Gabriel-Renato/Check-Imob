@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -21,9 +21,9 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { mockInspections, mockInspectionCards, getPropertyById } from '@/data/mockData';
+import { apiClient } from '@/services/api';
 import { cn } from '@/lib/utils';
-import { CardStatus } from '@/types';
+import { CardStatus, Inspection as InspectionType, Property, InspectionCard } from '@/types';
 import { toast } from 'sonner';
 
 const iconMap: Record<string, typeof Sofa> = {
@@ -59,7 +59,7 @@ const statusConfig = {
 };
 
 interface CardData {
-  status: CardStatus;
+  status: CardStatus | null;
   observation: string;
   hasPhoto: boolean;
 }
@@ -67,12 +67,207 @@ interface CardData {
 export default function Inspection() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const inspection = mockInspections.find(i => i.id === id);
-  const property = inspection ? getPropertyById(inspection.propertyId) : null;
-  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [inspection, setInspection] = useState<InspectionType | null>(null);
+  const [property, setProperty] = useState<Property | null>(null);
+  const [inspectionCards, setInspectionCards] = useState<InspectionCard[]>([]);
   const [cardStates, setCardStates] = useState<Record<string, CardData>>({});
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [showPhotoPrompt, setShowPhotoPrompt] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      loadData();
+    }
+  }, [id]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [inspectionData, cardsData] = await Promise.all([
+        apiClient.getInspection(id!),
+        apiClient.getInspectionCards()
+      ]);
+
+      const inspectionObj = inspectionData as InspectionType;
+      setInspection(inspectionObj);
+
+      // Buscar propriedade
+      if (inspectionObj.propertyId) {
+        const prop = await apiClient.getProperty(inspectionObj.propertyId);
+        setProperty(prop as Property);
+      }
+
+      // Definir cards
+      setInspectionCards(cardsData as InspectionCard[]);
+
+      // Inicializar estados dos cards a partir da vistoria
+      const states: Record<string, CardData> = {};
+      if (inspectionObj.cards) {
+        inspectionObj.cards.forEach(card => {
+          states[card.cardId] = {
+            status: card.status || null,
+            observation: card.observation || '',
+            hasPhoto: card.photos && card.photos.length > 0
+          };
+        });
+      }
+      setCardStates(states);
+    } catch (error) {
+      console.error('Erro ao carregar vistoria:', error);
+      toast.error('Erro ao carregar vistoria');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusSelect = async (cardId: string, status: CardStatus) => {
+    const currentState = cardStates[cardId] || { status: null, observation: '', hasPhoto: false };
+    
+    if (status !== 'ok' && !currentState.hasPhoto) {
+      setActiveCardId(cardId);
+      setShowPhotoPrompt(true);
+      return;
+    }
+    
+    // Atualizar estado local
+    setCardStates(prev => ({
+      ...prev,
+      [cardId]: { ...currentState, status }
+    }));
+
+    // Salvar na API
+    await saveCardState(cardId, { ...currentState, status });
+  };
+
+  const saveCardState = async (cardId: string, state: CardData) => {
+    if (!inspection || !id) return;
+
+    try {
+      const cards = inspection.cards || [];
+      const cardIndex = cards.findIndex(c => c.cardId === cardId);
+      
+      const cardData = {
+        cardId,
+        status: state.status,
+        observation: state.observation
+      };
+
+      let updatedCards = [...cards];
+      if (cardIndex >= 0) {
+        updatedCards[cardIndex] = { ...updatedCards[cardIndex], ...cardData };
+      } else {
+        updatedCards.push({ ...cardData, photos: [] });
+      }
+
+      await apiClient.updateInspection(id, {
+        cards: updatedCards,
+        status: 'in_progress'
+      });
+    } catch (error) {
+      console.error('Erro ao salvar estado do card:', error);
+      toast.error('Erro ao salvar alterações');
+    }
+  };
+
+  const handlePhotoCapture = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeCardId || !inspection?.id) return;
+
+    try {
+      setShowPhotoPrompt(false);
+      toast.loading('Enviando foto...', { id: 'upload' });
+
+      const result = await apiClient.uploadPhoto(inspection.id, activeCardId, file);
+      
+      // Atualizar estado do card
+      const currentState = cardStates[activeCardId] || { status: null, observation: '', hasPhoto: false };
+      setCardStates(prev => ({
+        ...prev,
+        [activeCardId]: { ...currentState, hasPhoto: true }
+      }));
+
+      // Atualizar vistoria
+      const updatedCards = (inspection.cards || []).map(card => {
+        if (card.cardId === activeCardId) {
+          return {
+            ...card,
+            photos: [...(card.photos || []), result]
+          };
+        }
+        return card;
+      });
+
+      await apiClient.updateInspection(inspection.id, { cards: updatedCards });
+
+      toast.success('Foto enviada com sucesso!', { id: 'upload' });
+      
+      // Limpar input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao enviar foto', { id: 'upload' });
+    }
+  };
+
+  const handleObservation = async (cardId: string, observation: string) => {
+    const currentState = cardStates[cardId] || { status: null, observation: '', hasPhoto: false };
+    
+    setCardStates(prev => ({
+      ...prev,
+      [cardId]: { ...currentState, observation }
+    }));
+
+    // Salvar na API
+    await saveCardState(cardId, { ...currentState, observation });
+  };
+
+  const allCardsCompleted = inspectionCards.every(card => {
+    const state = cardStates[card.id];
+    if (!state?.status) return false;
+    if (state.status !== 'ok' && !state.hasPhoto) return false;
+    return true;
+  });
+
+  const handleSubmit = async () => {
+    if (!allCardsCompleted) {
+      toast.error('Complete todos os ambientes antes de enviar');
+      return;
+    }
+
+    if (!inspection || !id) return;
+
+    try {
+      setSaving(true);
+      await apiClient.updateInspection(id, {
+        status: 'completed'
+      });
+      
+      toast.success('Vistoria enviada com sucesso!');
+      navigate('/corretor');
+    } catch (error) {
+      console.error('Erro ao enviar vistoria:', error);
+      toast.error('Erro ao enviar vistoria');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando vistoria...</p>
+      </div>
+    );
+  }
 
   if (!inspection || !property) {
     return (
@@ -82,55 +277,17 @@ export default function Inspection() {
     );
   }
 
-  const handleStatusSelect = (cardId: string, status: CardStatus) => {
-    const currentState = cardStates[cardId] || { status: null, observation: '', hasPhoto: false };
-    
-    if (status !== 'ok' && !currentState.hasPhoto) {
-      setActiveCardId(cardId);
-      setShowPhotoPrompt(true);
-    }
-    
-    setCardStates(prev => ({
-      ...prev,
-      [cardId]: { ...currentState, status }
-    }));
-  };
-
-  const handlePhotoCapture = (cardId: string) => {
-    // Simulate photo capture
-    setCardStates(prev => ({
-      ...prev,
-      [cardId]: { ...prev[cardId], hasPhoto: true }
-    }));
-    setShowPhotoPrompt(false);
-    toast.success('Foto capturada com sucesso!');
-  };
-
-  const handleObservation = (cardId: string, observation: string) => {
-    setCardStates(prev => ({
-      ...prev,
-      [cardId]: { ...prev[cardId], observation }
-    }));
-  };
-
-  const allCardsCompleted = mockInspectionCards.every(card => {
-    const state = cardStates[card.id];
-    if (!state?.status) return false;
-    if (state.status !== 'ok' && !state.hasPhoto) return false;
-    return true;
-  });
-
-  const handleSubmit = () => {
-    if (!allCardsCompleted) {
-      toast.error('Complete todos os ambientes antes de enviar');
-      return;
-    }
-    toast.success('Vistoria enviada com sucesso!');
-    navigate('/corretor');
-  };
-
   return (
     <div className="min-h-screen bg-background pb-24">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
       {/* Header */}
       <header className="bg-primary px-4 pt-12 pb-6 sticky top-0 z-30">
         <div className="flex items-center gap-3 mb-4">
@@ -163,7 +320,7 @@ export default function Inspection() {
 
       {/* Cards List */}
       <main className="px-4 py-6 space-y-4">
-        {mockInspectionCards.map((card, index) => {
+        {inspectionCards.map((card, index) => {
           const CardIcon = iconMap[card.icon] || Sofa;
           const state = cardStates[card.id];
           const isExpanded = activeCardId === card.id;
@@ -243,7 +400,10 @@ export default function Inspection() {
                             variant="ghost" 
                             size="sm"
                             className="ml-auto text-success"
-                            onClick={() => handlePhotoCapture(card.id)}
+                            onClick={() => {
+                              setActiveCardId(card.id);
+                              handlePhotoCapture();
+                            }}
                           >
                             <Camera className="w-4 h-4 mr-1" />
                             Nova foto
@@ -253,7 +413,10 @@ export default function Inspection() {
                         <Button
                           variant="outline"
                           className="w-full h-20 border-dashed border-2"
-                          onClick={() => handlePhotoCapture(card.id)}
+                          onClick={() => {
+                            setActiveCardId(card.id);
+                            handlePhotoCapture();
+                          }}
                         >
                           <Camera className="w-5 h-5 mr-2" />
                           Capturar foto do defeito
@@ -287,10 +450,10 @@ export default function Inspection() {
           size="lg"
           className="w-full h-14"
           onClick={handleSubmit}
-          disabled={!allCardsCompleted}
+          disabled={!allCardsCompleted || saving}
         >
           <Send className="w-5 h-5 mr-2" />
-          Finalizar e Enviar Vistoria
+          {saving ? 'Enviando...' : 'Finalizar e Enviar Vistoria'}
         </Button>
       </div>
 
@@ -314,7 +477,10 @@ export default function Inspection() {
               </Button>
               <Button
                 className="flex-1"
-                onClick={() => activeCardId && handlePhotoCapture(activeCardId)}
+                onClick={() => {
+                  setShowPhotoPrompt(false);
+                  handlePhotoCapture();
+                }}
               >
                 <Camera className="w-4 h-4 mr-2" />
                 Capturar
