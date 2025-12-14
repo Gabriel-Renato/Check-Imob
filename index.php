@@ -1,12 +1,17 @@
 <?php
 /**
  * Ponto de entrada principal
- * Redireciona para o index.html do build do frontend
+ * Serve o index.html do build do frontend para todas as rotas
  */
 
-// Se o build existe, redirecionar para ele
-if (file_exists(__DIR__ . '/dist/index.html')) {
-    readfile(__DIR__ . '/dist/index.html');
+// Caminho para o index.html do build
+$indexPath = __DIR__ . '/dist/index.html';
+
+if (file_exists($indexPath)) {
+    // Definir headers apropriados
+    header('Content-Type: text/html; charset=utf-8');
+    // Ler e servir o arquivo
+    readfile($indexPath);
     exit;
 }
 
@@ -17,7 +22,7 @@ if (file_exists(__DIR__ . '/dist/index.html')) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Property Insight - Build Necessário</title>
+    <title>Check Imob - Build Necessário</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -51,9 +56,6 @@ if (file_exists(__DIR__ . '/dist/index.html')) {
         <h1>Build do Frontend Necessário</h1>
         <p>Execute o build do frontend antes de usar em produção:</p>
         <code>npm run build</code>
-        <p>Ou para desenvolvimento:</p>
-        <code>npm run dev</code>
     </div>
 </body>
 </html>
-

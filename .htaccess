@@ -1,70 +1,21 @@
-# Configuração para servir o frontend React (build)
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /
-    
-    # Redirecionar requisições do backend para a pasta backend (não reescrever)
-    RewriteCond %{REQUEST_URI} ^/backend
-    RewriteRule ^ - [L]
-    
-    # Servir arquivos estáticos do dist/ diretamente (assets, imagens, etc)
-    RewriteCond %{REQUEST_URI} ^/(assets|favicon|logocheck|placeholder|robots)
-    RewriteCond %{DOCUMENT_ROOT}/dist%{REQUEST_URI} -f
-    RewriteRule ^(.*)$ /dist/$1 [L]
-    
-    # Se o arquivo existe em dist/, serva diretamente
-    RewriteCond %{REQUEST_URI} !^/dist/
-    RewriteCond %{DOCUMENT_ROOT}/dist%{REQUEST_URI} -f
-    RewriteRule ^(.*)$ /dist/$1 [L]
-    
-    # Se o diretório existe, serva diretamente (exceto se for a raiz ou uma rota SPA)
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteCond %{REQUEST_URI} !^/$
-    RewriteRule ^ - [L]
-    
-    # Se o arquivo existe na raiz (mas não é index.html), serva diretamente
-    RewriteCond %{REQUEST_FILENAME} -f
-    RewriteCond %{REQUEST_URI} !^/index\.(html|php)$
-    RewriteRule ^ - [L]
-    
-    # Para todas as outras requisições (incluindo raiz /), servir index.html do dist (SPA)
-    # Isso garante que o dist/index.html seja servido ao invés do index.html da raiz
-    RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
-    RewriteRule ^ /dist/index.html [L]
-</IfModule>
+RewriteEngine On
 
-# Desabilitar página de erro padrão do InfinityFree e usar o SPA
-ErrorDocument 404 /dist/index.html
+# Backend - não processar
+RewriteCond %{REQUEST_URI} ^/backend
+RewriteRule ^ - [L]
 
-# Configurações de cache
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType image/jpg "access plus 1 year"
-    ExpiresByType image/jpeg "access plus 1 year"
-    ExpiresByType image/gif "access plus 1 year"
-    ExpiresByType image/png "access plus 1 year"
-    ExpiresByType image/webp "access plus 1 year"
-    ExpiresByType image/svg+xml "access plus 1 year"
-    ExpiresByType image/x-icon "access plus 1 year"
-    ExpiresByType text/css "access plus 1 month"
-    ExpiresByType application/javascript "access plus 1 month"
-    ExpiresByType application/x-javascript "access plus 1 month"
-    ExpiresByType text/html "access plus 0 seconds"
-</IfModule>
+# Assets estáticos - servir diretamente se existem
+RewriteCond %{REQUEST_URI} ^/(assets|favicon|logocheck|placeholder|robots)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
 
-# Compressão
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
-</IfModule>
+# Arquivo físico existe - servir diretamente
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
 
-# Segurança
-<IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-    Header set X-XSS-Protection "1; mode=block"
-</IfModule>
+# Diretório físico existe - servir diretamente
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
-# Tipo MIME para módulos JavaScript
-<IfModule mod_mime.c>
-    AddType application/javascript js mjs
-</IfModule>
+# TUDO mais (rotas SPA) - usar index.php que serve index.html
+RewriteRule ^(.*)$ /index.php [L]
