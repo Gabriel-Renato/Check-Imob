@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, 
   CheckCircle2, 
@@ -17,11 +17,14 @@ import {
   WashingMachine,
   DoorOpen,
   Bed,
-  Send
+  Send,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { apiClient } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { CardStatus, Inspection as InspectionType, Property, InspectionCard } from '@/types';
 import { toast } from 'sonner';
@@ -62,11 +65,14 @@ interface CardData {
   status: CardStatus | null;
   observation: string;
   hasPhoto: boolean;
+  photos?: Array<{ id: string; url: string }>;
 }
 
 export default function Inspection() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inspection, setInspection] = useState<InspectionType | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
@@ -74,8 +80,13 @@ export default function Inspection() {
   const [cardStates, setCardStates] = useState<Record<string, CardData>>({});
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [showPhotoPrompt, setShowPhotoPrompt] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; id: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Determinar se é admin ou corretor baseado na rota
+  const isAdmin = location.pathname.startsWith('/admin');
+  const backUrl = isAdmin ? '/admin/inspections' : '/corretor';
 
   useEffect(() => {
     if (id) {
@@ -110,7 +121,8 @@ export default function Inspection() {
           states[card.cardId] = {
             status: card.status || null,
             observation: card.observation || '',
-            hasPhoto: card.photos && card.photos.length > 0
+            hasPhoto: card.photos && card.photos.length > 0,
+            photos: card.photos || []
           };
         });
       }
@@ -190,7 +202,11 @@ export default function Inspection() {
       const currentState = cardStates[activeCardId] || { status: null, observation: '', hasPhoto: false };
       setCardStates(prev => ({
         ...prev,
-        [activeCardId]: { ...currentState, hasPhoto: true }
+        [activeCardId]: { 
+          ...currentState, 
+          hasPhoto: true,
+          photos: [...(currentState.photos || []), result]
+        }
       }));
 
       // Atualizar vistoria
@@ -252,7 +268,7 @@ export default function Inspection() {
       });
       
       toast.success('Vistoria enviada com sucesso!');
-      navigate('/corretor');
+      navigate(backUrl);
     } catch (error) {
       console.error('Erro ao enviar vistoria:', error);
       toast.error('Erro ao enviar vistoria');
@@ -271,8 +287,11 @@ export default function Inspection() {
 
   if (!inspection || !property) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
         <p className="text-muted-foreground">Vistoria não encontrada</p>
+        <Button onClick={() => navigate(backUrl)} variant="outline">
+          Voltar
+        </Button>
       </div>
     );
   }
@@ -294,7 +313,7 @@ export default function Inspection() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/corretor')}
+            onClick={() => navigate(backUrl)}
             className="text-primary-foreground hover:bg-primary-foreground/10"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -324,6 +343,10 @@ export default function Inspection() {
           const CardIcon = iconMap[card.icon] || Sofa;
           const state = cardStates[card.id];
           const isExpanded = activeCardId === card.id;
+          
+          // Obter fotos do card, seja do estado ou da vistoria
+          const cardPhotos = state?.photos || 
+            (inspection?.cards?.find(c => c.cardId === card.id)?.photos || []);
           
           return (
             <div
@@ -374,12 +397,14 @@ export default function Inspection() {
                       return (
                         <button
                           key={key}
-                          onClick={() => handleStatusSelect(card.id, key)}
+                          onClick={() => !isAdmin && handleStatusSelect(card.id, key)}
+                          disabled={isAdmin}
                           className={cn(
                             "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200",
                             isSelected 
                               ? `${config.class} ${config.borderClass}` 
-                              : "border-border bg-background hover:border-muted-foreground/30"
+                              : "border-border bg-background hover:border-muted-foreground/30",
+                            isAdmin && "opacity-60 cursor-not-allowed"
                           )}
                         >
                           <StatusIcon className="w-5 h-5" />
@@ -391,36 +416,67 @@ export default function Inspection() {
 
                   {/* Photo capture for defects */}
                   {state?.status && state.status !== 'ok' && (
-                    <div className="mb-4">
-                      {state.hasPhoto ? (
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10 border border-success/30">
-                          <CheckCircle2 className="w-5 h-5 text-success" />
-                          <span className="text-sm text-success font-medium">Foto capturada</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="ml-auto text-success"
+                    <div className="mb-4 space-y-3">
+                      {(state.hasPhoto && cardPhotos.length > 0) ? (
+                        <>
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10 border border-success/30">
+                            <CheckCircle2 className="w-5 h-5 text-success" />
+                            <span className="text-sm text-success font-medium">
+                              {cardPhotos.length} {cardPhotos.length === 1 ? 'foto capturada' : 'fotos capturadas'}
+                            </span>
+                            {!isAdmin && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="ml-auto text-success"
+                                onClick={() => {
+                                  setActiveCardId(card.id);
+                                  handlePhotoCapture();
+                                }}
+                              >
+                                <Camera className="w-4 h-4 mr-1" />
+                                Nova foto
+                              </Button>
+                            )}
+                          </div>
+                          {/* Photo Gallery */}
+                          <div className="grid grid-cols-2 gap-3">
+                            {cardPhotos.map((photo) => (
+                              <button
+                                key={photo.id}
+                                onClick={() => setSelectedPhoto(photo)}
+                                className="relative group cursor-pointer"
+                              >
+                                <img
+                                  src={photo.url}
+                                  alt="Foto da vistoria"
+                                  className="w-full h-32 object-cover rounded-lg border border-border transition-transform group-hover:scale-105"
+                                  onError={(e) => {
+                                    console.error('Erro ao carregar imagem:', photo.url);
+                                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect width="100" height="100" fill="%23ccc"/%3E%3Ctext x="50" y="50" text-anchor="middle" dy=".3em" fill="%23999"%3EErro%3C/text%3E%3C/svg%3E';
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center">
+                                  <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        !isAdmin && (
+                          <Button
+                            variant="outline"
+                            className="w-full h-20 border-dashed border-2"
                             onClick={() => {
                               setActiveCardId(card.id);
                               handlePhotoCapture();
                             }}
                           >
-                            <Camera className="w-4 h-4 mr-1" />
-                            Nova foto
+                            <Camera className="w-5 h-5 mr-2" />
+                            Capturar foto do defeito
                           </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          className="w-full h-20 border-dashed border-2"
-                          onClick={() => {
-                            setActiveCardId(card.id);
-                            handlePhotoCapture();
-                          }}
-                        >
-                          <Camera className="w-5 h-5 mr-2" />
-                          Capturar foto do defeito
-                        </Button>
+                        )
                       )}
                     </div>
                   )}
@@ -433,7 +489,9 @@ export default function Inspection() {
                     <Textarea
                       placeholder="Descreva detalhes adicionais..."
                       value={state?.observation || ''}
-                      onChange={(e) => handleObservation(card.id, e.target.value)}
+                      onChange={(e) => !isAdmin && handleObservation(card.id, e.target.value)}
+                      disabled={isAdmin}
+                      readOnly={isAdmin}
                       className="min-h-[80px]"
                     />
                   </div>
@@ -444,18 +502,45 @@ export default function Inspection() {
         })}
       </main>
 
-      {/* Submit Button */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
-        <Button
-          size="lg"
-          className="w-full h-14"
-          onClick={handleSubmit}
-          disabled={!allCardsCompleted || saving}
-        >
-          <Send className="w-5 h-5 mr-2" />
-          {saving ? 'Enviando...' : 'Finalizar e Enviar Vistoria'}
-        </Button>
-      </div>
+      {/* Submit Button - Apenas para corretores */}
+      {!isAdmin && (
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
+          <Button
+            size="lg"
+            className="w-full h-14"
+            onClick={handleSubmit}
+            disabled={!allCardsCompleted || saving}
+          >
+            <Send className="w-5 h-5 mr-2" />
+            {saving ? 'Enviando...' : 'Finalizar e Enviar Vistoria'}
+          </Button>
+        </div>
+      )}
+
+      {/* Photo Viewer Modal */}
+      <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+        <DialogContent className="max-w-4xl w-full p-0 bg-transparent border-none">
+          {selectedPhoto && (
+            <div className="relative">
+              <button
+                onClick={() => setSelectedPhoto(null)}
+                className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <img
+                src={selectedPhoto.url}
+                alt="Foto da vistoria ampliada"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                onError={(e) => {
+                  console.error('Erro ao carregar imagem:', selectedPhoto.url);
+                  (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect width="100" height="100" fill="%23ccc"/%3E%3Ctext x="50" y="50" text-anchor="middle" dy=".3em" fill="%23999"%3EErro%3C/text%3E%3C/svg%3E';
+                }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Photo Prompt Modal */}
       {showPhotoPrompt && (

@@ -1,6 +1,7 @@
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Building2, Users, ClipboardList, Settings } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Building2, Users, ClipboardList, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
@@ -12,6 +13,13 @@ const navItems = [
 
 export function AdminMobileNav() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-inset-bottom lg:hidden">
@@ -34,6 +42,15 @@ export function AdminMobileNav() {
             </NavLink>
           );
         })}
+        <button
+          onClick={handleLogout}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 min-w-[64px] text-muted-foreground hover:text-destructive"
+          )}
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Sair</span>
+        </button>
       </div>
     </nav>
   );

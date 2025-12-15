@@ -95,6 +95,16 @@ function AppRoutes() {
         <Route path="settings" element={<AdminSettings />} />
       </Route>
 
+      {/* Admin Inspection Detail (outside layout for full screen) */}
+      <Route
+        path="/admin/inspection/:id"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Inspection />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Corretor Routes */}
       <Route
         path="/corretor"

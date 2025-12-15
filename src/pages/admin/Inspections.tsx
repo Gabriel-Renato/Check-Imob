@@ -220,7 +220,7 @@ export default function AdminInspections() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`/corretor/inspection/${inspection.id}`)}
+                      onClick={() => navigate(`/admin/inspection/${inspection.id}`)}
                     >
                       Ver Detalhes
                     </Button>
