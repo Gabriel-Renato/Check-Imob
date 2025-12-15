@@ -78,3 +78,4 @@ curl -X POST http://localhost/backend/api/properties/index.php \
 - Configure permissões adequadas para o diretório de uploads
 
 
+

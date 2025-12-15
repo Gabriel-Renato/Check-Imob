@@ -121,3 +121,4 @@ mysql -u root -p < backend/database/schema.sql
 - Verifique se o PHP permite uploads (`upload_max_filesize` e `post_max_size`)
 
 
+
