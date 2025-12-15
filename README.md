@@ -1,10 +1,10 @@
-# Property Insight
+# Check Imob
 
 Sistema de gestão de inspeções de propriedades desenvolvido para facilitar o controle e acompanhamento de inspeções imobiliárias.
 
 ## Sobre o Projeto
 
-O Property Insight é uma plataforma web que permite a gestão completa de inspeções de propriedades, oferecendo interfaces diferenciadas para administradores e corretores. O sistema facilita o agendamento, acompanhamento e gerenciamento de todas as etapas do processo de inspeção.
+O Check Imob é uma plataforma web que permite a gestão completa de inspeções de propriedades, oferecendo interfaces diferenciadas para administradores e corretores. O sistema facilita o agendamento, acompanhamento e gerenciamento de todas as etapas do processo de inspeção.
 
 ## Funcionalidades
 
@@ -109,3 +109,4 @@ Para contribuir com o projeto:
 ## Licença
 
 Este projeto é privado e de uso interno.
+
