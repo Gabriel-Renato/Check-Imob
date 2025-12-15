@@ -32,6 +32,7 @@ export function AdminSidebar() {
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300 flex flex-col",
+        "hidden lg:flex", // Esconder no mobile, mostrar no desktop
         collapsed ? "w-16" : "w-64"
       )}
     >

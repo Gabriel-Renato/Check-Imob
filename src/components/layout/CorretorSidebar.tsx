@@ -1,0 +1,130 @@
+import { NavLink, useLocation } from 'react-router-dom';
+import { 
+  Home, 
+  Calendar, 
+  ClipboardList, 
+  User,
+  LogOut,
+  ChevronLeft,
+  Menu
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { Logo } from '@/components/Logo';
+
+const navItems = [
+  { icon: Home, label: 'Início', path: '/corretor' },
+  { icon: Calendar, label: 'Agenda', path: '/corretor/agenda' },
+  { icon: ClipboardList, label: 'Vistorias', path: '/corretor/inspections' },
+  { icon: User, label: 'Perfil', path: '/corretor/profile' },
+];
+
+export function CorretorSidebar() {
+  const location = useLocation();
+  const { logout, user } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <aside
+      className={cn(
+        "fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300 flex flex-col",
+        "hidden lg:flex", // Esconder no mobile, mostrar no desktop
+        collapsed ? "w-16" : "w-64"
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
+        {!collapsed ? (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-sidebar-primary/10 flex items-center justify-center p-1">
+                <Logo size={24} className="w-full h-full object-contain" />
+              </div>
+              <span className="font-semibold text-sidebar-foreground">Check Imob</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setCollapsed(!collapsed)}
+              className="text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          </>
+        ) : (
+          <div className="w-full flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-sidebar-primary/10 flex items-center justify-center p-1">
+              <Logo size={24} className="w-full h-full object-contain" />
+            </div>
+          </div>
+        )}
+        {collapsed && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setCollapsed(!collapsed)}
+            className="absolute top-2 right-2 text-sidebar-foreground hover:bg-sidebar-accent"
+          >
+            <Menu className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent"
+              )}
+            >
+              <item.icon className="w-5 h-5 shrink-0" />
+              {!collapsed && <span className="font-medium">{item.label}</span>}
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      {/* User section */}
+      <div className="p-3 border-t border-sidebar-border">
+        {!collapsed && user && (
+          <div className="flex items-center gap-3 px-3 py-2 mb-2">
+            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+              <span className="text-sm font-medium text-sidebar-foreground">
+                {user.name.charAt(0)}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
+                {user.name}
+              </p>
+              <p className="text-xs text-sidebar-foreground/60 truncate">
+                Corretor
+              </p>
+            </div>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          onClick={logout}
+          className={cn(
+            "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent",
+            collapsed && "justify-center"
+          )}
+        >
+          <LogOut className="w-5 h-5" />
+          {!collapsed && <span className="ml-3">Sair</span>}
+        </Button>
+      </div>
+    </aside>
+  );
+}
