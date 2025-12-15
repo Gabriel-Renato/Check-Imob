@@ -123,3 +123,4 @@ INSERT INTO users (name, email, password, role) VALUES
 ('Pedro Oliveira', 'pedro.oliveira@vistoria.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'corretor')
 ON DUPLICATE KEY UPDATE email=email;
 
+

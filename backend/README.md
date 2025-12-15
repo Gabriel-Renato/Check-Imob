@@ -77,3 +77,4 @@ curl -X POST http://localhost/backend/api/properties/index.php \
 - Use uma biblioteca JWT adequada para autenticação em produção
 - Configure permissões adequadas para o diretório de uploads
 
+

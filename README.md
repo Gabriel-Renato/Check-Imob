@@ -1,73 +1,111 @@
-# Welcome to your Lovable project
+# Property Insight
 
-## Project info
+Sistema de gestão de inspeções de propriedades desenvolvido para facilitar o controle e acompanhamento de inspeções imobiliárias.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Sobre o Projeto
 
-## How can I edit this code?
+O Property Insight é uma plataforma web que permite a gestão completa de inspeções de propriedades, oferecendo interfaces diferenciadas para administradores e corretores. O sistema facilita o agendamento, acompanhamento e gerenciamento de todas as etapas do processo de inspeção.
 
-There are several ways of editing your application.
+## Funcionalidades
 
-**Use Lovable**
+### Painel Administrativo
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **Dashboard**: Visualização de estatísticas e métricas do sistema
+- **Gestão de Propriedades**: Cadastro, edição e controle de propriedades
+- **Gestão de Corretores**: Administração de usuários corretores
+- **Gestão de Inspeções**: Acompanhamento e controle de todas as inspeções
+- **Configurações**: Ajustes gerais do sistema
 
-Changes made via Lovable will be committed automatically to this repo.
+### Painel do Corretor
 
-**Use your preferred IDE**
+- **Home**: Visão geral das inspeções atribuídas
+- **Agenda**: Calendário e agendamento de inspeções
+- **Inspeções**: Lista e detalhes das inspeções
+- **Perfil**: Gerenciamento do perfil do corretor
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Tecnologias Utilizadas
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Este projeto foi construído com as seguintes tecnologias:
 
-Follow these steps:
+- **Vite**: Build tool e servidor de desenvolvimento
+- **TypeScript**: Linguagem de programação
+- **React**: Biblioteca para construção da interface
+- **React Router DOM**: Roteamento da aplicação
+- **shadcn-ui**: Componentes de UI
+- **Tailwind CSS**: Framework CSS utilitário
+- **TanStack Query**: Gerenciamento de estado do servidor
+- **React Hook Form**: Gerenciamento de formulários
+- **Zod**: Validação de schemas
+- **Recharts**: Biblioteca de gráficos
 
+## Pré-requisitos
+
+- Node.js (recomendado usar nvm para instalação)
+- npm ou yarn
+
+## Instalação
+
+1. Clone o repositório:
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone <URL_DO_REPOSITORIO>
+cd property-insight
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Instale as dependências:
+```sh
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Configure as variáveis de ambiente:
+```sh
+cp env.example .env
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Edite o arquivo `.env` com as configurações necessárias.
+
+4. Inicie o servidor de desenvolvimento:
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+A aplicação estará disponível em `http://localhost:5173` (ou a porta configurada).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Scripts Disponíveis
 
-**Use GitHub Codespaces**
+- `npm run dev`: Inicia o servidor de desenvolvimento
+- `npm run build`: Cria build de produção
+- `npm run build:dev`: Cria build de desenvolvimento
+- `npm run preview`: Visualiza o build de produção
+- `npm run lint`: Executa o linter
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Estrutura do Projeto
 
-## What technologies are used for this project?
+```
+property-insight/
+├── src/
+│   ├── components/     # Componentes reutilizáveis
+│   ├── contexts/       # Contextos React (Auth, etc)
+│   ├── pages/          # Páginas da aplicação
+│   ├── services/       # Serviços de API
+│   ├── types/          # Definições TypeScript
+│   ├── hooks/          # Custom hooks
+│   ├── lib/            # Utilitários
+│   └── integrations/   # Integrações externas
+├── public/             # Arquivos estáticos
+├── backend/            # Backend da aplicação
+└── supabase/           # Configurações Supabase
+```
 
-This project is built with:
+## Desenvolvimento
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Para contribuir com o projeto:
 
-## How can I deploy this project?
+1. Faça um fork do repositório
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/nova-funcionalidade`)
+5. Abra um Pull Request
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Licença
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Este projeto é privado e de uso interno.

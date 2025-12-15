@@ -73,3 +73,4 @@ try {
     echo json_encode(['error' => 'Erro ao obter logs']);
 }
 
+

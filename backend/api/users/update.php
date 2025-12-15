@@ -87,3 +87,4 @@ try {
     echo json_encode(['error' => 'Erro ao atualizar usuário']);
 }
 
+

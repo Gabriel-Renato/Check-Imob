@@ -74,3 +74,4 @@ Se ainda houver problemas:
 - Verificar Console do navegador
 - Verificar se mod_rewrite está ativo
 
+

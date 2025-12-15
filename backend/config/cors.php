@@ -18,3 +18,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Permitir JSON
 header('Content-Type: application/json; charset=utf-8');
 
+
